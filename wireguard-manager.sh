@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 
-WIREGUARD_MANAGER_PATH=~/.config/hypr/waybar/wireguard-manager
 SERVICE_NAME="wg-quick@wg0"
 STATUS_CONNECTED_STR='{"text":"Connected","class":"connected","alt":"connected"}'
 STATUS_DISCONNECTED_STR='{"text":"Disconnected","class":"disconnected","alt":"disconnected"}'
 
 function askpass() {
-  rofi -dmenu -password -no-fixed-num-lines -p "Sudo password : " -theme $WIREGUARD_MANAGER_PATH/rofi.rasi 
+  rofi -dmenu -password -no-fixed-num-lines -p "Sudo password : " -theme $WIREGUARD_MANAGER_SCRIPT_PATH/rofi.rasi 
 }
 
 function status_wireguard() {
@@ -16,8 +15,8 @@ function status_wireguard() {
 
 function toggle_wireguard() {
   status_wireguard && \
-     SUDO_ASKPASS=$WIREGUARD_MANAGER_PATH/wireguard-manager.sh sudo -A systemctl stop $SERVICE_NAME || \
-     SUDO_ASKPASS=$WIREGUARD_MANAGER_PATH/wireguard-manager.sh sudo -A systemctl start $SERVICE_NAME
+     SUDO_ASKPASS=$WIREGUARD_MANAGER_SCRIPT_PATH/wireguard-manager.sh sudo -A systemctl stop $SERVICE_NAME || \
+     SUDO_ASKPASS=$WIREGUARD_MANAGER_SCRIPT_PATH/wireguard-manager.sh sudo -A systemctl start $SERVICE_NAME
 }
 
 case $1 in
