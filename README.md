@@ -27,23 +27,39 @@ sudo systemctl daemon-reload
 ```
 
 You also need `rofi`.
-## Installation
 
-The recommended way to install the WireGuard manager module is to clone the repository and use the provided automated script:
+## Installation Guide
 
-1. Clone the repository (you can choose any location, as long as you keep all files from this repo in one folder and you don't change the file names):
+Follow these steps to install the Wireguard-manager module for Waybar:
 
+1. **Clone the Repository**
 
     ```bash
-    git clone https://github.com/yourusername/wireguard-manager.git /place/to/clone
-    cd /place/to/clone
+    git clone https://github.com/yourusername/wireguard-manager.git /path/to/clone
+    cd /path/to/clone
     ```
-2. Make sure `wireguard-manager.sh` exists in the same directory as `install.sh`.
-3. Run the script:
+
+2. **Ensure Required Files Exist**
+
+    Make sure `wireguard-manager.sh` and `install.sh` are in the same directory.
+
+3. **Run the Install Script as Root**
+
     ```bash
-    bash install.sh
+    sudo bash install.sh
     ```
-4. Follow the prompt to choose the module position (`left`, `right`, or `center`).
+
+4. **Follow the Prompts**
+
+    - Enter your WireGuard service name (e.g., `wg0`).
+    - Choose the module position in Waybar (`left`, `right`, or `center`).
+    - Select your preferred rofi theme (`light` or `dark`).
+
+5. **Restart Waybar**
+
+    After installation, restart Waybar to see the new module.
+
+If you encounter errors, check permissions and file locations. If you can't get it to work, please open an issue on our GitHub page.
 
 ## Usage
 
@@ -68,12 +84,12 @@ If you prefer to add the module manually, add the following to your waybar confi
      "format": "{icon}",
      "format-icons": {
           "connected": "<span color=\"#50fa7b\">VPN: 🔒</span>",
-          "disconnected": "<span color=\"#ff5555\">VPN: 🔓</span>",
+          "disconnected": "<span color=\"#ff5555\">VPN: 🔓</span>"
      },
      "interval": "once",
      "on-click": "~/.config/waybar/wireguard-manager/wireguard-manager.sh -t && pkill -SIGRTMIN+1 waybar",
      "return-type": "json",
-     "signal": 1,
+     "signal": 1
 }
 ```
 

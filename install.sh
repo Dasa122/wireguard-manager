@@ -1,12 +1,20 @@
 #!/bin/bash
 
 #The install script is made by Dasa122, who drinks too much coffee and talks about penguins
-
+set -e
+echo "Installing WireGuard manager module for Waybar..."
 # Channel your inner Sherlock Holmes to find where this script lives
 WG_MANAGER_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Find the Waybar config path by stalking the waybar process like a ninja
 WAYBAR_CONFIG_PATH=$(ps aux | grep 'waybar' | grep -- '--config' | awk -F '--config ' '{print $2}' | awk '{print $1}')
+
+echo "If you encounter any issues, please open an issue on GitHub."
+# Check if the script is running as root
+if [ "$EUID" -ne 0 ]; then
+    echo -e "\033[31merror: This script must be run as root. Please use sudo (or ask your cat for admin rights).\033[0m" >&2
+    exit 1
+fi
 
 # Check if our module is already in the config like a nosy neighbor
 if grep -q '"custom/wireguard-manager"' "$WAYBAR_CONFIG_PATH"; then
@@ -29,33 +37,45 @@ elif [ -f "$HOME/.config/waybar/config.jsonc" ]; then
     WAYBAR_CONFIG_PATH="$HOME/.config/waybar/config.jsonc"
 else
     echo -e "\033[31merror: Waybar config path not found. Please set the WAYBAR_CONFIG_PATH variable in the install script.\033[0m" >&2
+    exit 1
+fi
+
+# Check if the Waybar config file is writable like a true artist
+if [ ! -w "$WAYBAR_CONFIG_PATH" ]; then
+    echo -e "\033[31merror: Waybar config file is not writable. Please check your permissions.\033[0m" >&2
+    exit 1
+fi
 
 # Like a sneaky ninja, insert WIREGUARD_MANAGER_SCRIPT_PATH at the top of wireguard-manager.sh if it's not already seaking there
-if grep -q '^WIREGUARD_MANAGER_SCRIPT_PATH=' "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"; then
-    sed -i "s|^WIREGUARD_MANAGER_SCRIPT_PATH=.*|WIREGUARD_MANAGER_SCRIPT_PATH=\"$WG_MANAGER_SCRIPT_DIR\"|" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
+if grep -q '^WG_MANAGER_SCRIPT_DIR=' "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"; then
+    sed -i "s|^WG_MANAGER_SCRIPT_DIR=.*|WG_MANAGER_SCRIPT_DIR=\"$WG_MANAGER_SCRIPT_DIR\"|" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
 else
-    sed -i "1iWIREGUARD_MANAGER_SCRIPT_PATH=\"$WG_MANAGER_SCRIPT_DIR\"" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
+    sed -i "2iWG_MANAGER_SCRIPT_DIR=\"$WG_MANAGER_SCRIPT_DIR\"" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
 fi
 
 # Prompt the user for the WireGuard service name
 read -p "Enter your WireGuard service name (e.g., wg0): " wg_service_name
 
 # Check if the service exists
-if ! systemctl list-units --type=service | grep -q "wg-quick@${wg_service_name}.service"; then
-    echo -e "\033[31merror: Service wg-quick@${wg_service_name}.service not found. Please check your WireGuard configuration.\033[0m" >&2
+if [ ! -f "/etc/wireguard/${wg_service_name}.conf" ]; then
+    echo -e "\033[31merror: /etc/wireguard/${wg_service_name}.conf not found. Please check your WireGuard configuration.\033[0m" >&2
     exit 1
+else
+    echo "WireGuard configuration found: /etc/wireguard/${wg_service_name}.conf"
 fi
 
 # Insert or update the WG_SERVICE_NAME variable at the top of wireguard-manager.sh
 if grep -q '^WG_SERVICE_NAME=' "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"; then
-    sed -i "s|^WG_SERVICE_NAME=.*|WG_SERVICE_NAME=\"$wg_service_name\"|" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
+    sed -i "s|^WG_SERVICE_NAME=.*|WG_SERVICE_NAME=\"wg-quick@$wg_service_name\"|" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
 else
-    sed -i "1iWG_SERVICE_NAME=\"$wg_service_name\"" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
+    sed -i "2iWG_SERVICE_NAME=\"wg-quick@$wg_service_name\"" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
 fi
 
 
 # Inject our WireGuard manager module into the config like a secret agent
 cat <<EOF >> "$WAYBAR_CONFIG_PATH"
+
+
 "custom/wireguard-manager": {
     "exec": "exec $WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh -s",
     "format": "{icon}",
@@ -89,3 +109,30 @@ case "$position" in
         exit 1
         ;;
 esac
+
+# Prompt the user to choose light or dark rofi config
+read -p "Choose your rofi theme (light/dark): " rofi_theme
+
+case "$rofi_theme" in
+    light)
+        ROFI_CONFIG="$WG_MANAGER_SCRIPT_DIR/rofi-light.rasi"
+        ;;
+    dark)
+        ROFI_CONFIG="$WG_MANAGER_SCRIPT_DIR/rofi-dark.rasi"
+        ;;
+    *)
+        echo -e "\033[31merror: Invalid theme. Please choose light or dark.\033[0m" >&2
+        exit 1
+        ;;
+esac
+
+# Save the chosen rofi config path to wireguard-manager.sh
+if grep -q '^ROFI_CONFIG=' "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"; then
+    sed -i "s|^ROFI_CONFIG=.*|ROFI_CONFIG=\"$ROFI_CONFIG\"|" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
+else
+    sed -i "2iROFI_CONFIG=\"$ROFI_CONFIG\"" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
+fi
+
+echo "WireGuard manager module installed successfully!"
+echo "Please restart Waybar to see the changes."
+echo "If you encounter any issues, please open an issue on GitHub."
