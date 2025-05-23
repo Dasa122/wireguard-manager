@@ -16,11 +16,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Check if our module is already in the config like a nosy neighbor
-if grep -q '"custom/wireguard-manager"' "$WAYBAR_CONFIG_PATH"; then
-    echo -e "\033[31merror: custom/wireguard-manager already exists in config. Exiting.\033[0m" >&2
-    exit 1
-fi
+
 
 # Summon the ancient spirits to check if the WireGuard manager script exists in the directory
 # (Or, you know, just look for the file like a normal person)
@@ -71,6 +67,34 @@ else
     sed -i "2iWG_SERVICE_NAME=\"wg-quick@$wg_service_name\"" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
 fi
 
+# Prompt the user to choose light or dark rofi config
+read -p "Choose your rofi theme (light/dark): " rofi_theme
+
+case "$rofi_theme" in
+    light)
+        ROFI_CONFIG="$WG_MANAGER_SCRIPT_DIR/rofi-light.rasi"
+        ;;
+    dark)
+        ROFI_CONFIG="$WG_MANAGER_SCRIPT_DIR/rofi-dark.rasi"
+        ;;
+    *)
+        echo -e "\033[31merror: Invalid theme. Please choose light or dark.\033[0m" >&2
+        exit 1
+        ;;
+esac
+
+# Save the chosen rofi config path to wireguard-manager.sh
+if grep -q '^ROFI_CONFIG=' "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"; then
+    sed -i "s|^ROFI_CONFIG=.*|ROFI_CONFIG=\"$ROFI_CONFIG\"|" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
+else
+    sed -i "2iROFI_CONFIG=\"$ROFI_CONFIG\"" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
+fi
+
+# Check if our module is already in the config like a nosy neighbor
+if grep -q '"custom/wireguard-manager"' "$WAYBAR_CONFIG_PATH"; then
+    echo -e "\033[31merror: custom/wireguard-manager already exists in config. Exiting.\033[0m" >&2
+    exit 1
+fi
 
 # Inject our WireGuard manager module into the config like a secret agent
 cat <<EOF >> "$WAYBAR_CONFIG_PATH"
@@ -110,28 +134,7 @@ case "$position" in
         ;;
 esac
 
-# Prompt the user to choose light or dark rofi config
-read -p "Choose your rofi theme (light/dark): " rofi_theme
 
-case "$rofi_theme" in
-    light)
-        ROFI_CONFIG="$WG_MANAGER_SCRIPT_DIR/rofi-light.rasi"
-        ;;
-    dark)
-        ROFI_CONFIG="$WG_MANAGER_SCRIPT_DIR/rofi-dark.rasi"
-        ;;
-    *)
-        echo -e "\033[31merror: Invalid theme. Please choose light or dark.\033[0m" >&2
-        exit 1
-        ;;
-esac
-
-# Save the chosen rofi config path to wireguard-manager.sh
-if grep -q '^ROFI_CONFIG=' "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"; then
-    sed -i "s|^ROFI_CONFIG=.*|ROFI_CONFIG=\"$ROFI_CONFIG\"|" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
-else
-    sed -i "2iROFI_CONFIG=\"$ROFI_CONFIG\"" "$WG_MANAGER_SCRIPT_DIR/wireguard-manager.sh"
-fi
 
 echo "WireGuard manager module installed successfully!"
 echo "Please restart Waybar to see the changes."
